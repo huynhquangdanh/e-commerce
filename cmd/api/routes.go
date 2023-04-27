@@ -2,16 +2,26 @@ package main
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 )
 
 func (app *application) routes() http.Handler {
 	mux := chi.NewRouter()
 
-	mux.Get("/", app.Home)
+	mux.Use(middleware.Recoverer)
+	mux.Use(app.enableCORS)
 
-	mux.Get("/authenticate", app.authenticate)
+	//mux.Get("/", app.Home)
+
+	mux.Post("/authenticate", app.authenticate)
+	mux.Get("/refresh", app.refreshToken)
+
 	mux.Get("/products", app.AllProducts)
+	mux.Get("/products/{id}", app.GetProductByID)
+
+	//mux.Get("/history", app.GetHistoryByUser)
+	//mux.
 
 	return mux
 }
