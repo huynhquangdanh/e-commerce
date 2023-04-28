@@ -12,15 +12,23 @@ func (app *application) routes() http.Handler {
 	mux.Use(middleware.Recoverer)
 	mux.Use(app.enableCORS)
 
-	//mux.Get("/", app.Home)
+	mux.Get("/", app.Home)
 
 	mux.Post("/authenticate", app.authenticate)
+	mux.Post("/register", app.register)
 	mux.Get("/refresh", app.refreshToken)
 
 	mux.Get("/products", app.AllProducts)
 	mux.Get("/products/{id}", app.GetProductByID)
 
-	//mux.Get("/history", app.GetHistoryByUser)
+	mux.Route("/admin", func(mux chi.Router) {
+		mux.Use(app.authRequired)
+		mux.Get("/products/{id}/coupon", app.GenerateCoupon)
+
+	})
+	mux.Post("/purchase", app.Purchase)
+
+	mux.Get("/history", app.HistoriesByUser)
 	//mux.
 
 	return mux

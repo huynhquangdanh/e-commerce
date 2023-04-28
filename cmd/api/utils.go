@@ -1,10 +1,15 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
 type JSONRResponse struct {
@@ -68,4 +73,45 @@ func (app *application) errorJSON(w http.ResponseWriter, err error, status ...in
 	payload.Message = err.Error()
 
 	return app.writeJSON(w, statusCode, payload)
+}
+
+func (app *application) genRandomString() string {
+	// Seed the random number generator
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random number between 0 and 1000
+	randomNumber := rand.Intn(1000)
+
+	// Get the current timestamp in milliseconds
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+
+	// Concatenate the timestamp and random number
+	input := fmt.Sprintf("%d%d", timestamp, randomNumber)
+
+	// Create an MD5 hash of the input string
+	hasher := md5.New()
+	hasher.Write([]byte(input))
+	hash := hex.EncodeToString(hasher.Sum(nil))
+
+	// Get the first 8 characters of the hash string
+	uniqueString := hash[:8]
+
+	fmt.Println("Generated unique string:", uniqueString)
+	return uniqueString
+}
+
+func (app *application) GetDiscountRateOnPrice(price int) float64 {
+	switch {
+	case price > 0 && price <= 5:
+		return 0.5
+	case price > 5 && price <= 10:
+		return 0.6
+	case price > 10 && price <= 20:
+		return 0.7
+	case price > 20:
+		return 0.8
+	default:
+		return 1
+
+	}
 }

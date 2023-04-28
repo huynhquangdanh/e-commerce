@@ -28,7 +28,7 @@ func (m *PostresDBRepo) AllProducts() ([]*models.Product, error) {
 		from
 		    products
 		order by
-		    name
+		    product_name
 	`
 
 	rows, err := m.DB.QueryContext(ctx, query)
@@ -138,4 +138,111 @@ func (m *PostresDBRepo) GetUserByID(id int) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (m *PostresDBRepo) GetHistoryByUser(userID int) ([]*models.HistoryGet, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	query := `select histories.id, users.first_name, products.product_name, quantity, discount_applied,
+			histories.created_at from histories left join products on histories.product_id = products.id
+			left join users on histories.user_id = users.id where user_id = $1`
+
+	rows, err := m.DB.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var histories []*models.HistoryGet
+	for rows.Next() {
+		var history models.HistoryGet
+		err := rows.Scan(
+			&history.ID,
+			&history.UserName,
+			&history.ProductName,
+			&history.Quantity,
+			&history.Discount,
+			&history.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		histories = append(histories, &history)
+	}
+
+	query = `select id, product_name, price from history`
+
+	return histories, nil
+}
+
+func (m *PostresDBRepo) InsertUser(user models.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	sql := `insert into users (first_name, last_name, email, password, created_at, updated_at) values ($1, $2, $3, $4, $5, $6)`
+
+	_, err := m.DB.ExecContext(ctx, sql, user.FirstName, user.LastName, user.Email, user.Password, time.Now(), time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *PostresDBRepo) AddHistory(history *models.History) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	sql := `insert into histories (product_id, user_id, quantity, discount_applied, created_at, updated_at) values ($1, $2, $3, $4, $5, $6)`
+
+	_, err := m.DB.ExecContext(ctx, sql, history.ProductID, history.UserID, history.Quantity, history.Discount, time.Now(), time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *PostresDBRepo) SaveCoupon(coupon *models.Coupon) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	sql := `insert into coupons (code, rate, product_id, user_id, expired_at, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7)`
+
+	_, err := m.DB.ExecContext(ctx, sql, coupon.Code, coupon.Rate, coupon.ProductID, coupon.UserID, coupon.ExpireAt, time.Now(), time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *PostresDBRepo) GetCouponByCode(code string) (*models.Coupon, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	query := `select * from coupon where code = $1`
+
+	var coupon models.Coupon
+	row := m.DB.QueryRowContext(ctx, query, code)
+
+	err := row.Scan(
+		&coupon.ID,
+		&coupon.Code,
+		&coupon.Rate,
+		&coupon.ProductID,
+		&coupon.UserID,
+		&coupon.Active,
+		&coupon.ExpireAt,
+		&coupon.CreatedAt,
+		&coupon.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &coupon, nil
 }

@@ -91,6 +91,26 @@ CREATE TABLE public.histories (
 
 
 --
+-- Name: coupons; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE IF not exists coupons (
+                                       id INT NOT NULL,
+                                       code VARCHAR(50),
+                                       rate INT NOT NULL,
+                                       product_id INT NOT NULL,
+                                       user_id INT,
+                                       active BOOLEAN DEFAULT true,
+                                       expired_at TIMESTAMP,
+                                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                       PRIMARY KEY (id),
+                                       FOREIGN KEY (product_id) REFERENCES products(id),
+                                       FOREIGN KEY (user_id) REFERENCES users(id)
+)
+
+
+--
 -- Name: histories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
