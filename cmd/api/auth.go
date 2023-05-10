@@ -44,7 +44,7 @@ func (j *Auth) GenerateTokenPair(user *jwtUser) (TokenPairs, error) {
 	claims["sub"] = fmt.Sprint(user.ID)
 	claims["aud"] = j.Audience
 	claims["iss"] = j.Issuer
-	claims["iat"] = time.Now()
+	claims["iat"] = time.Now().Unix()
 	claims["typ"] = "JWT"
 
 	claims["exp"] = time.Now().UTC().Add(j.TokenExpiry).Unix()
@@ -121,7 +121,7 @@ func (j *Auth) RetrieveUser(tokenString string) int {
 
 	claims := token.Claims.(jwt.MapClaims)
 	token, _ = jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("my_secret_key"), nil
+		return []byte(j.Secret), nil
 	})
 
 	m := make(map[string]string)

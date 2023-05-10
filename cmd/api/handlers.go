@@ -284,7 +284,10 @@ func (app *application) Purchase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := w.Header().Get("Authorization")
+	token := r.Header.Get("Authorization")
+
+	splitToken := strings.Split(token, "Bearer ")
+	token = splitToken[1]
 
 	userID := app.auth.RetrieveUser(token)
 
@@ -293,31 +296,49 @@ func (app *application) Purchase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	order := models.History{}
+
 	//check if the coupon match with coupon saved in table coupon base on the code and product_id and expired_at, active
-	coupon, err := app.DB.GetCouponByCode(purchase.Coupon)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
+	if purchase.Coupon != "" {
+		coupon, err := app.DB.GetCouponByCode(purchase.Coupon)
+		if err != nil {
+			app.errorJSON(w, err)
+			return
+		}
+
+		if coupon.ProductID != purchase.ProductID {
+			app.errorJSON(w, errors.New("coupon code is not applicable for this product"))
+			return
+		}
+
+		if !coupon.Active || coupon.ExpireAt.Before(time.Now()) {
+			app.errorJSON(w, errors.New("coupon code expired"))
+			return
+		}
+
+		//deactivate the coupon
+		err = app.DB.DeactivateCoupon(coupon.Code)
+		if err != nil {
+			app.errorJSON(w, err)
+			return
+		}
+
+		order = models.History{
+			ProductID: purchase.ProductID,
+			UserID:    userID,
+			Quantity:  purchase.Quantity,
+			Discount:  coupon.Rate,
+		}
+	} else {
+		order = models.History{
+			ProductID: purchase.ProductID,
+			UserID:    userID,
+			Quantity:  purchase.Quantity,
+			Discount:  0,
+		}
 	}
 
-	if coupon.ProductID != purchase.ProductID {
-		app.errorJSON(w, errors.New("coupon code is not applicable for this product"))
-		return
-	}
-
-	if !coupon.Active || coupon.ExpireAt.Before(time.Now()) {
-		app.errorJSON(w, errors.New("coupon code expired"))
-		return
-	}
-
-	order := models.History{
-		ProductID: purchase.ProductID,
-		UserID:    userID,
-		Quantity:  purchase.Quantity,
-		Discount:  coupon.Rate,
-	}
-
-	app.DB.AddHistory(&order)
+	err = app.DB.AddHistory(&order)
 	if err != nil {
 		app.errorJSON(w, err)
 		return

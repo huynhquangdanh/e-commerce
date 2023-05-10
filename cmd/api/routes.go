@@ -24,12 +24,10 @@ func (app *application) routes() http.Handler {
 	mux.Route("/admin", func(mux chi.Router) {
 		mux.Use(app.authRequired)
 		mux.Get("/products/{id}/coupon", app.GenerateCoupon)
-
+		mux.Get("/history", app.HistoriesByUser)
 	})
-	mux.Post("/purchase", app.Purchase)
 
-	mux.Get("/history", app.HistoriesByUser)
-	//mux.
+	mux.Post("/purchase", app.Purchase)
 
 	return mux
 }

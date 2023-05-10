@@ -100,7 +100,7 @@ func (app *application) genRandomString() string {
 	return uniqueString
 }
 
-func (app *application) GetDiscountRateOnPrice(price int) float64 {
+func (app *application) GetDiscountRateOnPrice(price int) float32 {
 	switch {
 	case price > 0 && price <= 5:
 		return 0.5
@@ -112,6 +112,5 @@ func (app *application) GetDiscountRateOnPrice(price int) float64 {
 		return 0.8
 	default:
 		return 1
-
 	}
 }

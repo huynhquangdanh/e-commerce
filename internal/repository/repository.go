@@ -16,4 +16,5 @@ type DatabaseRepo interface {
 	AddHistory(history *models.History) error
 	SaveCoupon(coupon *models.Coupon) error
 	GetCouponByCode(code string) (*models.Coupon, error)
+	DeactivateCoupon(couponCode string) error
 }

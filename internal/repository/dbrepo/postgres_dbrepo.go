@@ -63,7 +63,7 @@ func (m *PostresDBRepo) OneProduct(id int) (*models.Product, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	query := `select id, name, price, description, created_at, updated_at
+	query := `select id, product_name, price, description, created_at, updated_at
 			from products where id = $1`
 
 	row := m.DB.QueryRowContext(ctx, query, id)
@@ -224,7 +224,7 @@ func (m *PostresDBRepo) GetCouponByCode(code string) (*models.Coupon, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	query := `select * from coupon where code = $1`
+	query := `select * from coupons where code = $1`
 
 	var coupon models.Coupon
 	row := m.DB.QueryRowContext(ctx, query, code)
@@ -245,4 +245,18 @@ func (m *PostresDBRepo) GetCouponByCode(code string) (*models.Coupon, error) {
 	}
 
 	return &coupon, nil
+}
+
+func (m *PostresDBRepo) DeactivateCoupon(couponCode string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	stmt := `update coupons set active = $1 where code = $2`
+
+	_, err := m.DB.ExecContext(ctx, stmt, false, couponCode)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
